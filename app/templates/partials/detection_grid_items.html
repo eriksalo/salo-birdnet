@@ -1,0 +1,15 @@
+{% for d in detections %}
+{% include "partials/detection_grid_card.html" %}
+{% endfor %}
+
+{% if detections %}
+<div id="load-more-trigger"
+     hx-get="/more?last_id={{ detections[-1].id }}"
+     hx-trigger="revealed"
+     hx-target="#detection-grid"
+     hx-swap="beforeend"
+     hx-swap-oob="delete:#load-more-trigger"
+     class="text-center py-4 text-gray-400 text-sm col-span-full">
+    Loading more...
+</div>
+{% endif %}

@@ -45,6 +45,44 @@ async def get_dashboard_stats(db: aiosqlite.Connection) -> DashboardStats:
     )
 
 
+async def get_todays_detections(
+    db: aiosqlite.Connection, limit: int = 40, last_id: int | None = None
+) -> list[Detection]:
+    today = date.today().isoformat()
+    if last_id:
+        query = """
+            SELECT rowid as id, Date, Time, Sci_Name, Com_Name, Confidence,
+                   Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name
+            FROM detections
+            WHERE Date = ? AND rowid < ?
+            ORDER BY rowid DESC
+            LIMIT ?
+        """
+        params: tuple = (today, last_id, limit)
+    else:
+        query = """
+            SELECT rowid as id, Date, Time, Sci_Name, Com_Name, Confidence,
+                   Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name
+            FROM detections
+            WHERE Date = ?
+            ORDER BY rowid DESC
+            LIMIT ?
+        """
+        params = (today, limit)
+
+    async with db.execute(query, params) as cur:
+        rows = await cur.fetchall()
+        return [
+            Detection(
+                id=row[0], date=row[1], time=row[2], sci_name=row[3],
+                com_name=row[4], confidence=row[5], lat=row[6], lon=row[7],
+                cutoff=row[8], week=row[9], sens=row[10], overlap=row[11],
+                file_name=row[12],
+            )
+            for row in rows
+        ]
+
+
 async def get_recent_detections(
     db: aiosqlite.Connection, limit: int = 20, after_id: int | None = None
 ) -> list[Detection]:
@@ -367,6 +405,54 @@ async def get_top_species_heatmap(
             {"com_name": row[0], "hour": row[1], "count": row[2]}
             for row in rows
         ]
+
+
+async def get_todays_top_species_by_hour(
+    db: aiosqlite.Connection, limit: int = 10
+) -> tuple[list[str], dict[str, int], dict[str, dict[int, int]]]:
+    """Return top species today ranked by count, with per-hour breakdown.
+
+    Returns:
+        species: list of species names ordered by total count desc
+        totals: {species: total_count}
+        hourly: {species: {hour: count}}
+    """
+    today = date.today().isoformat()
+
+    # Get top species by count today
+    top_query = """
+        SELECT Com_Name, COUNT(*) as cnt
+        FROM detections
+        WHERE Date = ?
+        GROUP BY Com_Name
+        ORDER BY cnt DESC
+        LIMIT ?
+    """
+    async with db.execute(top_query, (today, limit)) as cur:
+        rows = await cur.fetchall()
+        species = [row[0] for row in rows]
+        totals = {row[0]: row[1] for row in rows}
+
+    if not species:
+        return [], {}, {}
+
+    # Get hourly breakdown for those species
+    placeholders = ",".join("?" for _ in species)
+    hourly_query = f"""
+        SELECT Com_Name,
+               CAST(SUBSTR(Time, 1, 2) AS INTEGER) as hour,
+               COUNT(*) as count
+        FROM detections
+        WHERE Date = ? AND Com_Name IN ({placeholders})
+        GROUP BY Com_Name, hour
+    """
+    hourly: dict[str, dict[int, int]] = {s: {} for s in species}
+    async with db.execute(hourly_query, (today, *species)) as cur:
+        rows = await cur.fetchall()
+        for row in rows:
+            hourly[row[0]][row[1]] = row[2]
+
+    return species, totals, hourly
 
 
 async def get_all_species_names(db: aiosqlite.Connection) -> list[str]:

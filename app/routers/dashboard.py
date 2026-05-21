@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 
@@ -13,15 +15,16 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/")
 async def dashboard(request: Request, db: aiosqlite.Connection = Depends(get_db)):
     stats = await queries.get_dashboard_stats(db)
-    recent = await queries.get_recent_detections(db, limit=15)
-    new_species = await queries.get_new_species_today(db)
-    rare_species = await queries.get_rare_species_today(db)
-    hourly = await queries.get_hourly_counts(db)
+    species, totals, hourly = await queries.get_todays_top_species_by_hour(db, limit=10)
+
+    # Current hour for highlighting
+    current_hour = datetime.now().hour
 
     return templates.TemplateResponse(request, "pages/dashboard.html", {
         "stats": stats,
-        "recent_detections": recent,
-        "new_species": new_species,
-        "rare_species": rare_species,
-        "hourly_counts": [h.model_dump() for h in hourly],
+        "species": species,
+        "totals": totals,
+        "hourly": hourly,
+        "current_hour": current_hour,
+        "hours": list(range(24)),
     })

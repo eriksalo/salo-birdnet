@@ -22,6 +22,22 @@ class Detection(BaseModel):
     def datetime_str(self) -> str:
         return f"{self.date} {self.time}"
 
+    @property
+    def species_dir(self) -> str:
+        return self.com_name.replace(" ", "_").replace("'", "")
+
+    @property
+    def audio_path(self) -> str:
+        return f"Extracted/By_Date/{self.date}/{self.species_dir}/{self.file_name}"
+
+    @property
+    def spectrogram_path(self) -> str:
+        return f"Extracted/By_Date/{self.date}/{self.species_dir}/{self.file_name}.png"
+
+    @property
+    def confidence_pct(self) -> int:
+        return round(self.confidence * 100)
+
 
 class SpeciesSummary(BaseModel):
     com_name: str

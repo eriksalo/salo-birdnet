@@ -4,9 +4,9 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - /home/pi/BirdNET-Pi/scripts/birds.db:/data/birds.db:ro
-      - /home/pi/BirdSongs:/data/birdsongs:ro
-      - /etc/birdnet:/data/config:ro
+      - /home/erik/BirdNET-Pi/scripts/birds.db:/data/birds.db:ro
+      - /home/erik/BirdSongs:/data/birdsongs:ro
+      - /home/erik/BirdNET-Pi/birdnet.conf:/data/config/birdnet.conf:ro
     environment:
       - BIRDNET_DB_PATH=/data/birds.db
       - BIRDNET_RECS_DIR=/data/birdsongs

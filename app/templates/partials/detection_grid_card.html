@@ -1,0 +1,26 @@
+<div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors">
+    <div class="relative">
+        <img src="/audio/{{ d.spectrogram_path }}" alt="Spectrogram"
+             class="w-full h-24 object-cover bg-gray-800"
+             loading="lazy" onerror="this.style.display='none'">
+        <span class="absolute top-1 right-1 text-xs font-bold px-1.5 py-0.5 rounded
+            {% if d.confidence >= 0.9 %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300
+            {% elif d.confidence >= 0.7 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300
+            {% else %}bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300{% endif %}">
+            {{ d.confidence_pct }}%
+        </span>
+    </div>
+    <div class="p-2">
+        <div class="text-xs text-gray-400 dark:text-gray-500">{{ d.time }}</div>
+        <a href="/species/{{ d.com_name }}"
+           class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline leading-tight block truncate">
+            {{ d.com_name }}
+        </a>
+        <div class="text-xs text-gray-400 italic truncate">{{ d.sci_name }}</div>
+        {% if d.file_name %}
+        <audio controls preload="none" class="w-full h-7 mt-1.5" style="min-width:0">
+            <source src="/audio/{{ d.audio_path }}" type="audio/mpeg">
+        </audio>
+        {% endif %}
+    </div>
+</div>

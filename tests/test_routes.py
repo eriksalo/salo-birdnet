@@ -6,7 +6,7 @@ async def test_dashboard(client):
     resp = await client.get("/")
     assert resp.status_code == 200
     assert "BirdNET" in resp.text
-    assert "Total Detections" in resp.text
+    assert "Today" in resp.text
 
 
 @pytest.mark.asyncio
