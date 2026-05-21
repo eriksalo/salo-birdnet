@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}System - Salo BirdNET{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h1 class="text-xl font-bold">System Information</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- System info -->
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-sm font-semibold">Host</h2>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for label, value in [
+                    ('Hostname', sys_info.hostname),
+                    ('Platform', sys_info.platform),
+                    ('Uptime', sys_info.uptime),
+                    ('CPU Temp', sys_info.cpu_temp),
+                    ('Memory', sys_info.memory),
+                    ('Disk', sys_info.disk),
+                ] %}
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <span class="text-sm text-gray-500">{{ label }}</span>
+                    <span class="text-sm font-medium">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Database stats -->
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-sm font-semibold">Database</h2>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for label, value in [
+                    ('DB Size', sys_info.db_size),
+                    ('Total Rows', "{:,}".format(db_stats.total_rows)),
+                    ('Date Range', db_stats.date_range),
+                ] %}
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <span class="text-sm text-gray-500">{{ label }}</span>
+                    <span class="text-sm font-medium">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Services -->
+    <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm font-semibold">Services</h2>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for svc in services %}
+            <div class="px-4 py-3 flex items-center justify-between">
+                <div>
+                    <span class="text-sm font-medium">{{ svc.name }}</span>
+                    <span class="text-xs text-gray-400 ml-2">{{ svc.host }}:{{ svc.port }}</span>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                    {% if svc.status == 'up' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200
+                    {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                    {{ svc.status }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

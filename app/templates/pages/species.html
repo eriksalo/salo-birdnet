@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Species - Salo BirdNET{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl font-bold">Species ({{ species_list|length }})</h1>
+        <input type="search" placeholder="Search species..."
+               hx-get="/species/search" hx-target="#species-grid" hx-swap="innerHTML"
+               hx-trigger="keyup changed delay:300ms" name="q"
+               class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-surface-700 text-sm px-3 py-2 w-64">
+    </div>
+
+    <div id="species-grid">
+        {% include "partials/species_grid.html" %}
+    </div>
+</div>
+{% endblock %}

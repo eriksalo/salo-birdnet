@@ -1,0 +1,14 @@
+services:
+  salo-birdnet:
+    build: .
+    ports:
+      - "8081:8080"
+    volumes:
+      - /home/pi/BirdNET-Pi/scripts/birds.db:/data/birds.db:ro
+      - /home/pi/BirdSongs:/data/birdsongs:ro
+      - /etc/birdnet:/data/config:ro
+    environment:
+      - BIRDNET_DB_PATH=/data/birds.db
+      - BIRDNET_RECS_DIR=/data/birdsongs
+      - BIRDNET_CONF_PATH=/data/config/birdnet.conf
+    restart: unless-stopped

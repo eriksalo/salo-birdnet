@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" x-data="{ darkMode: localStorage.getItem('darkMode') !== 'false' }"
+      :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Salo BirdNET{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        surface: { 50: '#f8fafc', 100: '#f1f5f9', 700: '#1e293b', 800: '#0f172a', 900: '#020617' },
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+        .htmx-request .htmx-indicator { opacity: 1; }
+        .htmx-request.htmx-indicator { opacity: 1; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-surface-100 dark:bg-surface-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-surface-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center space-x-6">
+                    <a href="/" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">BirdNET</a>
+                    <div class="hidden md:flex space-x-1">
+                        <a href="/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if request.url.path == '/' %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            Dashboard
+                        </a>
+                        <a href="/detections/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if '/detections' in request.url.path %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            Detections
+                        </a>
+                        <a href="/species/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if '/species' in request.url.path %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            Species
+                        </a>
+                        <a href="/charts/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if '/charts' in request.url.path %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            Charts
+                        </a>
+                        <a href="/system/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if '/system' in request.url.path %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            System
+                        </a>
+                        <a href="/config/" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-surface-700
+                            {% if '/config' in request.url.path %}bg-gray-100 dark:bg-surface-700 text-emerald-600 dark:text-emerald-400{% endif %}">
+                            Config
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Dark mode toggle -->
+                    <button @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode)"
+                            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-surface-700">
+                        <svg x-show="darkMode" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+                        </svg>
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                    </button>
+                    <!-- Mobile menu -->
+                    <div class="md:hidden" x-data="{ open: false }">
+                        <button @click="open = !open" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-surface-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak
+                             class="absolute right-4 top-14 bg-white dark:bg-surface-800 rounded-lg shadow-lg border dark:border-gray-700 py-2 w-48 z-50">
+                            <a href="/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">Dashboard</a>
+                            <a href="/detections/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">Detections</a>
+                            <a href="/species/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">Species</a>
+                            <a href="/charts/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">Charts</a>
+                            <a href="/system/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">System</a>
+                            <a href="/config/" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-surface-700">Config</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

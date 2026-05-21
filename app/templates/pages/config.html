@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Configuration - Salo BirdNET{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl font-bold">BirdNET Configuration</h1>
+        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-surface-700 px-2 py-1 rounded">Read-only</span>
+    </div>
+
+    {% if not config_groups %}
+    <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400">
+        <p>Configuration file not found or empty.</p>
+        <p class="text-xs mt-1">Expected at: {{ request.app.state.settings.birdnet_conf_path }}</p>
+    </div>
+    {% else %}
+    {% for group, settings in config_groups.items() %}
+    <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm font-semibold">{{ group }}</h2>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for key, value in settings.items() %}
+            <div class="px-4 py-3 flex items-center justify-between">
+                <span class="text-sm font-mono text-gray-600 dark:text-gray-300">{{ key }}</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400 max-w-md truncate">{{ value }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

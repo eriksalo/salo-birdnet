@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ species.com_name }} - Salo BirdNET{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ species.com_name }}</h1>
+                <p class="text-gray-500 dark:text-gray-400 italic">{{ species.sci_name }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold">{{ species.detection_count }}</p>
+                <p class="text-xs text-gray-400">detections</p>
+            </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Avg Confidence</p>
+                <p class="font-semibold">{{ "%.0f"|format(species.avg_confidence * 100) }}%</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">First Detected</p>
+                <p class="font-semibold">{{ species.first_detected[:10] }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-400">Last Detected</p>
+                <p class="font-semibold">{{ species.last_detected[:10] }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="text-sm font-semibold mb-3">Detection Timeline (30 days)</h3>
+            <canvas id="species-daily-chart" height="200"></canvas>
+        </div>
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 class="text-sm font-semibold mb-3">Hourly Distribution</h3>
+            <canvas id="species-hourly-chart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent detections -->
+    <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold mb-3">Recent Detections</h3>
+        <div class="space-y-3">
+            {% for detection in detections %}
+            {% include "components/detection_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Daily timeline
+const dailyData = {{ daily_counts | tojson }};
+new Chart(document.getElementById('species-daily-chart'), {
+    type: 'bar',
+    data: {
+        labels: dailyData.map(d => d.date),
+        datasets: [{
+            data: dailyData.map(d => d.count),
+            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+            borderColor: 'rgb(16, 185, 129)',
+            borderWidth: 1,
+            borderRadius: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { ticks: { maxTicksLimit: 10, color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.1)' } }
+        }
+    }
+});
+
+// Hourly distribution
+const hourlyData = {{ hourly_distribution | tojson }};
+const hourLabels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+const hMap = {};
+hourlyData.forEach(h => { hMap[h.hour] = h.count; });
+new Chart(document.getElementById('species-hourly-chart'), {
+    type: 'bar',
+    data: {
+        labels: hourLabels,
+        datasets: [{
+            data: hourLabels.map((_, i) => hMap[i] || 0),
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1,
+            borderRadius: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { ticks: { maxTicksLimit: 8, color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: 'rgba(156,163,175,0.1)' } }
+        }
+    }
+});
+</script>
+{% endblock %}

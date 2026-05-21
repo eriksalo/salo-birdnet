@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Salo BirdNET{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Detections</p>
+            <p class="text-2xl font-bold mt-1" id="stat-total">{{ "{:,}".format(stats.total_detections) }}</p>
+        </div>
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Today</p>
+            <p class="text-2xl font-bold mt-1" id="stat-today">{{ stats.today_detections }}</p>
+        </div>
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Species Today</p>
+            <p class="text-2xl font-bold mt-1" id="stat-species-today">{{ stats.species_today }}</p>
+        </div>
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Species</p>
+            <p class="text-2xl font-bold mt-1" id="stat-total-species">{{ stats.total_species }}</p>
+        </div>
+        <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 col-span-2 lg:col-span-1">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Detections/Hour</p>
+            <p class="text-2xl font-bold mt-1" id="stat-rate">{{ stats.hourly_rate }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent detections feed -->
+        <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold">Recent Detections</h2>
+                <span class="text-xs text-gray-400">
+                    <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-1"></span>
+                    Live
+                </span>
+            </div>
+            <div id="detection-feed" class="space-y-3">
+                {% for detection in recent_detections %}
+                {% include "components/detection_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Hourly activity chart -->
+            <div class="bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <h3 class="text-sm font-semibold mb-3">Today's Activity</h3>
+                <canvas id="hourly-chart" height="200"></canvas>
+            </div>
+
+            {% if new_species %}
+            <!-- New species today -->
+            <div class="bg-white dark:bg-surface-800 rounded-lg border border-emerald-500 p-4">
+                <h3 class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-2">New Species Today!</h3>
+                <div class="space-y-1">
+                    {% for name in new_species %}
+                    <a href="/species/{{ name }}" class="block text-sm hover:text-emerald-600 dark:hover:text-emerald-400">{{ name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if rare_species %}
+            <!-- Rare species today -->
+            <div class="bg-white dark:bg-surface-800 rounded-lg border border-yellow-500 p-4">
+                <h3 class="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">Rare Species Today</h3>
+                <div class="space-y-1">
+                    {% for s in rare_species %}
+                    <a href="/species/{{ s.com_name }}" class="block text-sm hover:text-yellow-600">
+                        {{ s.com_name }} <span class="text-xs text-gray-400">({{ s.days_seen }} day{{ 's' if s.days_seen != 1 }})</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Hourly activity chart
+const hourlyData = {{ hourly_counts | tojson }};
+const hourLabels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+const hourMap = {};
+hourlyData.forEach(h => { hourMap[h.hour] = h.count; });
+const hourValues = hourLabels.map((_, i) => hourMap[i] || 0);
+
+new Chart(document.getElementById('hourly-chart'), {
+    type: 'bar',
+    data: {
+        labels: hourLabels,
+        datasets: [{
+            data: hourValues,
+            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+            borderColor: 'rgb(16, 185, 129)',
+            borderWidth: 1,
+            borderRadius: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: {
+                ticks: { maxTicksLimit: 8, color: '#9ca3af', font: { size: 10 } },
+                grid: { display: false }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: { color: '#9ca3af', font: { size: 10 } },
+                grid: { color: 'rgba(156, 163, 175, 0.1)' }
+            }
+        }
+    }
+});
+
+// SSE for live updates
+const evtSource = new EventSource('/api/sse/detections');
+evtSource.addEventListener('detection', (e) => {
+    const d = JSON.parse(e.data);
+    const feed = document.getElementById('detection-feed');
+    // Build card HTML and prepend
+    const card = document.createElement('div');
+    card.className = 'bg-white dark:bg-surface-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-emerald-500 transition-colors animate-pulse';
+    card.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+                <a href="/species/${d.com_name}" class="text-base font-semibold text-emerald-600 dark:text-emerald-400 hover:underline truncate block">${d.com_name}</a>
+                <p class="text-xs text-gray-500 dark:text-gray-400 italic">${d.sci_name}</p>
+                <div class="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span>${d.date} ${d.time}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        d.confidence >= 0.9 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
+                        d.confidence >= 0.7 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }">${Math.round(d.confidence * 100)}%</span>
+                </div>
+            </div>
+        </div>`;
+    feed.prepend(card);
+    setTimeout(() => card.classList.remove('animate-pulse'), 2000);
+    // Remove oldest if > 20 items
+    while (feed.children.length > 20) feed.lastChild.remove();
+});
+
+evtSource.addEventListener('stats', (e) => {
+    const s = JSON.parse(e.data);
+    document.getElementById('stat-total').textContent = s.total_detections.toLocaleString();
+    document.getElementById('stat-today').textContent = s.today_detections;
+    document.getElementById('stat-species-today').textContent = s.species_today;
+    document.getElementById('stat-total-species').textContent = s.total_species;
+    document.getElementById('stat-rate').textContent = s.hourly_rate;
+});
+</script>
+{% endblock %}
